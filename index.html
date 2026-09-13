@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="./style.css">
+</head>
+
+<body>
+    <div class="main">
+        <div class="container">
+            <form style="flex-wrap:wrap" onsubmit="event.preventDefault();uploadData(this);">
+                <input type="text" placeholder="Your Name" required>
+                <input type="file" required>
+                <button style="height: 40px; width: 100%">Compare</button>
+            </form>
+            <div id="result"></div>
+        </div>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/4.0.0/jquery.js"
+        integrity="sha512-jx7pKV1OCCwD8nJVKETycdimr+xPg3VCP0Wc5tX0RdpusPKEC72eB5cyqgT48K5HxbXvbxIc/oDVb70QMhSeLw=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script>
+        function uploadData(form) {
+            let inputs = form.querySelectorAll('input');
+            fileSize = inputs[1].files[0].size;
+            $.ajax({
+                url: "./PHP/storesize.php",
+                method: 'POST',
+                data: { name: inputs[0].value, size: fileSize },
+                success: function (data) {
+                    if(data.success){
+                        document.getElementById('result').classList.remove('error');
+                        document.getElementById('result').classList.add('success');
+                        document.getElementById('result').textContent = data.message;
+                        setTimeout(() => {
+                            window.open(`./compare?name=${data.name}`)
+                        },3000)
+                    }
+                    else {
+                        
+                        document.getElementById('result').classList.remove('success');
+                        document.getElementById('result').classList.add('error');
+                        document.getElementById('result').textContent = 'An unexpected Error';
+
+                    }
+                }
+            })
+        }
+    </script>
+</body>
+
+</html>
