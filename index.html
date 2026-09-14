@@ -9,47 +9,141 @@
 </head>
 
 <body>
+
     <div class="main">
         <div class="container">
-            <form style="flex-wrap:wrap" onsubmit="event.preventDefault();uploadData(this);">
-                <input type="text" placeholder="Your Name" required>
-                <input type="file" required>
-                <button style="height: 40px; width: 100%">Compare</button>
+
+            <form style="flex-wrap: wrap;" onsubmit="event.preventDefault(); uploadData(this);">
+
+                <input type="text" name="name" placeholder="Your Name" required>
+
+                <input
+                    type="file"
+                    name="file"
+                    required
+                >
+
+                <button style="height: 40px; width: 100%;">
+                    Compare
+                </button>
+
             </form>
+
             <div id="result"></div>
+
         </div>
     </div>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/4.0.0/jquery.js"
         integrity="sha512-jx7pKV1OCCwD8nJVKETycdimr+xPg3VCP0Wc5tX0RdpusPKEC72eB5cyqgT48K5HxbXvbxIc/oDVb70QMhSeLw=="
-        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+        crossorigin="anonymous"
+        referrerpolicy="no-referrer">
+    </script>
+
     <script>
+
         function uploadData(form) {
-            let inputs = form.querySelectorAll('input');
-            fileSize = inputs[1].files[0].size;
+
+            const nameInput = form.querySelector('input[name="name"]');
+            const fileInput = form.querySelector('input[name="file"]');
+
+            const name = nameInput.value.trim();
+            const file = fileInput.files[0];
+
+            if (!file) {
+                showError("Please select a file.");
+                return;
+            }
+
+            // Allowed MIME types
+            const allowedTypes = [
+                // PDF
+                "application/pdf",
+
+                // Documents
+                "application/msword",
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                "text/plain",
+
+                // Excel
+                "application/vnd.ms-excel",
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+
+                // PowerPoint
+                "application/vnd.ms-powerpoint",
+                "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+
+            ];
+
+            if (!allowedTypes.includes(file.type)) {
+                showError("This file type is not allowed.");
+                fileInput.value = "";
+                return;
+            }
+
+            // Create FormData
+            const formData = new FormData();
+
+            formData.append("name", name);
+            formData.append("file", file);
+
             $.ajax({
                 url: "./PHP/storesize.php",
-                method: 'POST',
-                data: { name: inputs[0].value, size: fileSize },
-                success: function (data) {
-                    if(data.success){
-                        document.getElementById('result').classList.remove('error');
-                        document.getElementById('result').classList.add('success');
-                        document.getElementById('result').textContent = data.message;
-                        setTimeout(() => {
-                            window.open(`./compare?name=${data.name}`)
-                        },3000)
-                    }
-                    else {
-                        
-                        document.getElementById('result').classList.remove('success');
-                        document.getElementById('result').classList.add('error');
-                        document.getElementById('result').textContent = 'An unexpected Error';
+                method: "POST",
+                data: formData,
 
+                // Required when sending files
+                processData: false,
+                contentType: false,
+
+                success: function (data) {
+
+                    // If PHP returns JSON as a string
+                    if (typeof data === "string") {
+                        try {
+                            data = JSON.parse(data);
+                        } catch (e) {
+                            showError("Invalid server response.");
+                            return;
+                        }
                     }
+
+                    if (data.success) {
+
+                        const result = document.getElementById("result");
+
+                        result.classList.remove("error");
+                        result.classList.add("success");
+                        result.textContent = data.message;
+
+                        setTimeout(() => {
+                            window.open(`./compare?name=${encodeURIComponent(data.name)}`);
+                        }, 3000);
+
+                    } else {
+                        showError(data.message || "An unexpected error occurred.");
+                    }
+                },
+
+                error: function (xhr) {
+                    showError("Upload failed. Please try again.");
+                    console.log(xhr.responseText);
                 }
-            })
+            });
         }
+
+
+        function showError(message) {
+
+            const result = document.getElementById("result");
+
+            result.classList.remove("success");
+            result.classList.add("error");
+            result.textContent = message;
+        }
+
     </script>
+
 </body>
 
 </html>
